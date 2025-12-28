@@ -20,6 +20,23 @@ class VirtualMachine:
                 b = self.stack.pop()
                 a = self.stack.pop()
                 self.stack.append(a + b)
+            elif op == "SUB":
+                check_stack(2, line)
+                b = self.stack.pop()
+                a = self.stack.pop()
+                self.stack.append(a - b)
+            elif op == "MUL":
+                check_stack(2, line)
+                b = self.stack.pop()
+                a = self.stack.pop()
+                self.stack.append(a * b)
+            elif op == "DIV":
+                check_stack(2, line)
+                b = self.stack.pop()
+                a = self.stack.pop()
+                if b == 0:
+                    raise RuntimeError("Division by zero", line)
+                self.stack.append(a // b)
             elif op == "PRINT":
                 check_stack(1, line)
                 print(self.stack.pop())

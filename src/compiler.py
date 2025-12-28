@@ -28,29 +28,37 @@ class Compiler:
                 bytecode.append(("PUSH", val, line_num))
                 bytecode.append(("STORE", var, line_num))
             elif line.startswith('print '):
-                expr = line[6:]  # remove 'print '
-                if ' + ' in expr:
-                    # print x + y or 5 + 3
-                    parts = expr.split(' + ')
-                    if len(parts) != 2:
-                        raise CompileError("Invalid expression syntax", line_num)
-                    a, b = parts
-                    if a.isdigit():
-                        bytecode.append(("PUSH", int(a), line_num))
-                    else:
-                        bytecode.append(("LOAD", a, line_num))
-                    if b.isdigit():
-                        bytecode.append(("PUSH", int(b), line_num))
-                    else:
-                        bytecode.append(("LOAD", b, line_num))
-                    bytecode.append(("ADD", line_num))
-                else:
-                    # print x or print 5
-                    if expr.isdigit():
-                        bytecode.append(("PUSH", int(expr), line_num))
-                    else:
-                        bytecode.append(("LOAD", expr, line_num))
+                expr = line[6:].strip()  # remove 'print ' and strip
+                bytecode.extend(self.compile_expression(expr, line_num))
                 bytecode.append(("PRINT", line_num))
             else:
                 raise CompileError("Unknown statement", line_num)
         return bytecode
+
+    def compile_expression(self, expr, line_num):
+        # Tokenize: split by spaces
+        tokens = expr.split()
+        if not tokens:
+            raise CompileError("Empty expression", line_num)
+        # Shunting-yard algorithm for infix to postfix
+        output = []
+        operators = []
+        precedence = {'+': 1, '-': 1, '*': 2, '/': 2}
+        for token in tokens:
+            if token.isdigit():
+                output.append(("PUSH", int(token), line_num))
+            elif token in precedence:
+                while operators and operators[-1] in precedence and precedence[operators[-1]] >= precedence[token]:
+                    op = operators.pop()
+                    output.append((self.op_to_bytecode(op), line_num))
+                operators.append(token)
+            else:
+                # Assume variable
+                output.append(("LOAD", token, line_num))
+        while operators:
+            op = operators.pop()
+            output.append((self.op_to_bytecode(op), line_num))
+        return output
+
+    def op_to_bytecode(self, op):
+        return {'+': 'ADD', '-': 'SUB', '*': 'MUL', '/': 'DIV'}[op]
